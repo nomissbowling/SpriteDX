@@ -30,6 +30,7 @@ class SDXGraph;
 class SDXImage;
 class SDXMask;
 class SDXVector;
+class SDXMap;
 class SDXPool;
 
 class SDXSprite {
@@ -37,13 +38,16 @@ class SDXSprite {
   friend SDXImage;
   friend SDXMask;
   friend SDXVector;
+  friend SDXMap;
   friend SDXPool;
 protected:
   int (*disposer)(SDXSprite *);
   int hnd;
 public:
   virtual operator int(){ return hnd; }
-  virtual SDXSprite &operator [](size_t i){ return *this; } // no check NULL
+  virtual SDXSprite &operator [](size_t i){ return *this; } // no check NULL or throw
+  virtual SDXSprite &operator [](const char *key){ return *this; } // no check NULL or throw
+  virtual SDXSprite *const*operator [](const char *key) const { return NULL; } // no check NULL or throw
   SDXSprite(int (*d)(SDXSprite *)) : disposer(d), hnd(-1) {}
   SDXSprite(const SDXSprite &o) : disposer(o.disposer), hnd(o.hnd) {}
   virtual int Dispose(){ if(hnd != -1){ disposer(this); hnd = -1; } return 0; }
@@ -84,7 +88,7 @@ protected:
   static inline int d_SDXVector(SDXSprite *self){ return 0; } // do nothing
   sdxvec_t v;
 public:
-  virtual operator int(){ return v[0]->hnd; } // no check NULL (safety hnd)
+  virtual operator int(){ return v[0]->hnd; } // no check NULL (safety hnd) or throw
   virtual SDXSprite &operator [](size_t i){ return *v[i]; } // no check NULL
   SDXVector(size_t n) : SDXSprite(d_SDXVector) { hnd = 0; v.reserve(n); }
   virtual int Dispose(){
@@ -94,13 +98,31 @@ public:
   virtual ~SDXVector(){ Dispose(); }
 };
 
+typedef map<const string, SDXSprite *> sdxmap_t;
+class SDXMap : public SDXSprite {
+  friend SDXPool;
+protected:
+  static inline int d_SDXMap(SDXSprite *self){ return 0; } // do nothing
+  sdxmap_t m;
+public:
+  virtual operator int(){ return m[""]->hnd; } // no check NULL (safety hnd) or throw
+  virtual SDXSprite &operator [](const char *key){ return *m[key]; } // no check NULL
+  virtual SDXSprite *const*operator [](const char *key) const { return &m.at(key); } // no check NULL
+  SDXMap() : SDXSprite(d_SDXMap) { hnd = 0; }
+  virtual int Dispose(){
+    for(sdxmap_t::iterator i = m.begin(); i != m.end(); ++i)
+      if(i->second){ delete i->second; i->second = NULL; }
+  }
+  virtual ~SDXMap(){ Dispose(); }
+};
+
 typedef map<const string, SDXSprite *> pool_t;
 class SDXPool {
 protected:
   pool_t m;
 public:
   SDXPool() {}
-  SDXSprite &operator [](string key){ return *m[key]; } // no check NULL
+  SDXSprite &operator [](const char *key){ return *m[key]; } // no check NULL
   int h(string key){ return m[key] ? m[key]->hnd : -1; }
   int r(string key, SDXSprite *p){ m[key] = p; return p->hnd; }
 #if 0
