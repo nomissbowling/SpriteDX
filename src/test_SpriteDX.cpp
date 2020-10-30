@@ -34,7 +34,7 @@ int fgc = GetColor(240, 240, 240);
 char fn[] = "res/panda_rot_N_120x136.png"; // 4 3 2 1 0 (N replaced later)
 int frame_max = 60, frame = 0, cnt = 0;
 
-int draw(SDXPool &pool)
+int draw(SDXMap &pool)
 {
   int hgr = pool["gr"]; // gr Graph test
   DrawGraph(0, 0, hgr, TRUE);
@@ -137,18 +137,18 @@ int main(int ac, char **av)
   SetGraphMode(800, 600, 32); // before init
   if(DxLib_Init() == -1) return -1;
 
-  SDXPool pool; // auto Disposed *** after DxLib_End ***
-  pool.r("gr", new SDXGraph(PNG_BKG));
-  pool.r("bk", new SDXImage(64, 64));
-  pool.r("im", new SDXImage(PNG_IMAGE));
-  pool.r("mg", new SDXGraph(64, 64));
-  pool.r("mh", new SDXMask(PNG_MASK));
-  pool.r("msk", new SDXMask(32, 16));
-  pool.r("sim", new SDXImage(64, 64));
-  pool.r("nim", new SDXVector(5));
+  SDXMap pool; // auto Disposed *** after DxLib_End ***
+  pool[SDXKey("gr")] = new SDXGraph(PNG_BKG);
+  pool[SDXKey("bk")] = new SDXImage(64, 64);
+  pool[SDXKey("im")] = new SDXImage(PNG_IMAGE);
+  pool[SDXKey("mg")] = new SDXGraph(64, 64);
+  pool[SDXKey("mh")] = new SDXMask(PNG_MASK);
+  pool[SDXKey("msk")] = new SDXMask(32, 16);
+  pool[SDXKey("sim")] = new SDXImage(64, 64);
+  pool[SDXKey("nim")] = new SDXVector(5);
   for(int i = 0; i < 5; ++i){
     fn[14] = '0' + i;
-    pool.rn("nim", new SDXImage(fn), i);
+    pool["nim"][SDXIdx(i)] = new SDXImage(fn);
   }
   SetBackgroundColor(0, 0, 0);
   while(!ScreenFlip() && !ProcessMessage() && !ClearDrawScreen()
